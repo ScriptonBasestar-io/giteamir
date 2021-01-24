@@ -2,6 +2,14 @@
 
 gitea mirror command line
 
+## Install
+
+```shell
+go install github.com/ScriptonBasestar-io/giteamir
+```
+
+## Usage
+
 ```shell
 # default
 expoet GITHUB_TYPE=Organization
