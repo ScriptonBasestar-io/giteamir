@@ -1,0 +1,9 @@
+# build
+
+# ide
+.idea/
+
+# os
+
+# run
+.env
