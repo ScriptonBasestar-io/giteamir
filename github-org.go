@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/google/go-github/github"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -46,7 +47,8 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 		fmt.Println(repos)
 		if err != nil {
 			fmt.Println(err)
-			return
+			os.Exit(1)
+			//return
 		}
 		allRepos = append(allRepos, repos...)
 		if resp.NextPage == 0 {

@@ -50,7 +50,8 @@ func main() {
 		flag.Usage()
 		fmt.Println()
 		fmt.Println("ex) giteamir -a github_org_or_user_name -gth gitea.domain.tld -gtt tokentokentoken")
-		return
+		os.Exit(1)
+		//return
 	}
 
 	if githubType == "Organization" {
