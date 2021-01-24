@@ -32,8 +32,8 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 			//FullName: *githubOrgObj.
 			Description: *githubOrgObj.Description,
 			Website:     *githubOrgObj.ReposURL,
-			Location:    *githubOrgObj.Location,
-			Visibility:  gitea.VisibleTypeLimited,
+			//Location:    *githubOrgObj.Location,
+			Visibility: gitea.VisibleTypeLimited,
 		}
 	}
 	// get all repositories from organization
