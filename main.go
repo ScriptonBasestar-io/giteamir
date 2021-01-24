@@ -25,7 +25,6 @@ func main() {
 //github-org -a steemit
 //`)
 //	}
-	flag.Usage()
 	flag.Parse()
 
 	if githubType == "" {
@@ -45,13 +44,16 @@ func main() {
 	}
 
 	if githubAcc == "" || giteaHost == "" || giteaToken == "" {
-		fmt.Println("Usage of gitea mirror")
-		fmt.Println("giteamir -a scriptonbasestar-io -gth gitea.domain.tld gtt tokentokentoken")
-		fmt.Println("terminator")
+		//fmt.Println("Usage of gitea mirror")
+		flag.Usage()
+		fmt.Println()
+		fmt.Println("ex) giteamir -a github_org_or_user_name -gth gitea.domain.tld gtt tokentokentoken")
 		return
 	}
 
 	if githubType == "Organization" {
-		migrateOrgGithubToGitea(githubType, "", giteaHost, giteaToken)
+		migrateOrgGithubToGitea(githubAcc, "", giteaHost, giteaToken)
+	} else {
+		migrateUsrGithubToGitea(githubAcc, "", giteaHost, giteaToken)
 	}
 }
