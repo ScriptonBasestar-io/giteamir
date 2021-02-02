@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/google/go-github/github"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -44,11 +43,11 @@ func migrateUsrGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 	}
 	for {
 		repos, resp, err := githubClient.Repositories.List(ctx, *githubUsrObj.Login, opt)
-		fmt.Println(repos)
+		//fmt.Println(repos)
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
-			//return
+			//os.Exit(1)
+			return
 		}
 		allRepos = append(allRepos, repos...)
 		if resp.NextPage == 0 {
@@ -85,8 +84,8 @@ func migrateUsrGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 			CloneAddr:   *allRepos[i].CloneURL,
 			RepoOwnerID: giteaOrgObj.ID,
 			RepoName:    *allRepos[i].Name,
-			Mirror:      true, // TODO: uncomment this if you want gitea to periodically check for changes
-			Private:     true, // TODO: uncomment this if you want the repo to be private on gitea
+			Mirror:      true,
+			Private:     false,
 			Description: description,
 		})
 		fmt.Println(repo)

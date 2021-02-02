@@ -32,7 +32,7 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 			Name: *githubOrgObj.Login,
 			//FullName: *githubOrgObj.
 			Description: *githubOrgObj.Description,
-			Website:     *githubOrgObj.ReposURL,
+			Website:     *githubOrgObj.HTMLURL,
 			//Location:    *githubOrgObj.Location,
 			Visibility: gitea.VisibleTypeLimited,
 		}
@@ -44,11 +44,11 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 	}
 	for {
 		repos, resp, err := githubClient.Repositories.ListByOrg(ctx, *githubOrgObj.Login, opt)
-		fmt.Println(repos)
+		//fmt.Println(repos)
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
-			//return
+			//os.Exit(1)
+			return
 		}
 		allRepos = append(allRepos, repos...)
 		if resp.NextPage == 0 {
@@ -75,18 +75,25 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 		giteaClient.CreateOrg(orgOption)
 	}
 
+	if giteaOrgObj.ID == 1 {
+		fmt.Println("exit. org id is ", giteaOrgObj.ID)
+		os.Exit(1)
+	}
 	for i := 0; i < len(allRepos); i++ {
-		fmt.Printf("repo name %d: %s\n", i, *allRepos[i].Name)
+		fmt.Printf("repo name %d: %d  %s\n", i, giteaOrgObj.ID, *allRepos[i].Name)
 		description := ""
 		if allRepos[i].Description != nil { // will throw a nil pointer error if description is passed directly to the below struct
 			description = *allRepos[i].Description
 		}
+		//giteaClient.TransferRepo("archmagece", *allRepos[i].Name, gitea.TransferRepoOption{
+		//	NewOwner: giteaOrgObj.UserName,
+		//})
 		repo, _, _ := giteaClient.MigrateRepo(gitea.MigrateRepoOption{
 			CloneAddr:   *allRepos[i].CloneURL,
 			RepoOwnerID: giteaOrgObj.ID,
 			RepoName:    *allRepos[i].Name,
-			Mirror:      true, // TODO: uncomment this if you want gitea to periodically check for changes
-			Private:     true, // TODO: uncomment this if you want the repo to be private on gitea
+			Mirror:      true,
+			Private:     false,
 			Description: description,
 		})
 		fmt.Println(repo)

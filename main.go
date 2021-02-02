@@ -29,12 +29,10 @@ func main() {
 
 	if githubType == "" {
 		githubType = os.Getenv("GITHUB_TYPE")
-	} else {
-		githubType = "Organization"
 	}
-	if githubAccount == "" {
-		githubAccount = os.Getenv("GITHUB_ACCOUNT")
-	}
+	//if githubAccount == "" {
+	//	githubAccount = os.Getenv("GITHUB_ACCOUNT")
+	//}
 	//if githubToken == "" {
 	//	githubToken = os.Getenv("GITHUB_TOKEN")
 	//}
@@ -56,7 +54,9 @@ func main() {
 
 	if githubType == "Organization" {
 		migrateOrgGithubToGitea(githubAccount, "", giteaHost, giteaToken)
-	} else {
+	} else if githubType == "User" {
 		migrateUsrGithubToGitea(githubAccount, "", giteaHost, giteaToken)
+	} else {
+		fmt.Printf("githubType %s is not supported", githubType)
 	}
 }
