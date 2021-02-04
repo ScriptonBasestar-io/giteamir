@@ -8,6 +8,10 @@ gitea mirror command line
 go install github.com/ScriptonBasestar-io/giteamir
 ```
 
+## Caution
+
+github api limit
+
 ## Usage
 
 ```shell

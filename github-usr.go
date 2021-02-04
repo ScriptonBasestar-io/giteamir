@@ -80,6 +80,7 @@ func migrateUsrGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 		}
 	}
 
+	// https://api.github.com/orgs/wikibook !?!!?!? https://api.github.com/users/wikibook ?!?!?!?!
 	for i := 0; i < len(allRepos); i++ {
 		fmt.Printf("repo name %d/%d  id: %d  %s\n", i, len(allRepos), giteaOrgObj.ID, *allRepos[i].Name)
 		description := ""

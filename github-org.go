@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-github/github"
 	"net/http"
 	"os"
-	"time"
+	"sync"
 )
 
 func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken string) {
@@ -27,7 +27,7 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 		fmt.Println("Org not exists")
 		fmt.Println(err)
 	} else {
-		fmt.Print(githubOrgObj)
+		fmt.Println(githubOrgObj)
 		description := ""
 		if githubOrgObj.Description != nil { // will throw a nil pointer error if description is passed directly to the below struct
 			description = *githubOrgObj.Description
@@ -48,13 +48,14 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 	opt := &github.RepositoryListByOrgOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
+	fmt.Println("read repo before", *githubOrgObj.Login)
 	for {
 		repos, resp, err := githubClient.Repositories.ListByOrg(ctx, *githubOrgObj.Login, opt)
 		//fmt.Println(repos)
 		if err != nil {
 			fmt.Println(err)
-			//os.Exit(1)
-			return
+			fmt.Println(resp)
+			os.Exit(1)
 		}
 		allRepos = append(allRepos, repos...)
 		if resp.NextPage == 0 {
@@ -73,16 +74,17 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 	giteaClient, _ := gitea.NewClient("https://"+giteaHost+"/", gitea.SetToken(giteaToken))
 
 	// create org if not exists
-	giteaOrgObj, res, err := giteaClient.GetOrg(*githubOrgObj.Login)
-	fmt.Println(giteaOrgObj, res, err)
-	if err != nil && err.Error() == "404 Not Found" {
-		fmt.Println("organization not exists in gitea")
-		fmt.Println("create org : " + *githubOrgObj.Login)
-		giteaOrgObj, res, err = giteaClient.CreateOrg(orgOption)
-		if err != nil {
-			fmt.Println("exit. org id is ", giteaOrgObj.ID)
-			os.Exit(1)
-			return
+	giteaOrgObj, resp, err := giteaClient.GetOrg(*githubOrgObj.Login)
+	fmt.Println(giteaOrgObj, resp, err)
+	if err != nil {
+		if err.Error() == "404 Not Found" {
+			fmt.Println("organization not exists in gitea")
+			fmt.Println("create org : " + *githubOrgObj.Login)
+			giteaOrgObj, resp, err = giteaClient.CreateOrg(orgOption)
+			if err != nil {
+				fmt.Println("exit. org id is ", giteaOrgObj.ID)
+				os.Exit(1)
+			}
 		}
 	}
 
@@ -92,6 +94,8 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 	//	return
 	//}
 
+	var wait sync.WaitGroup
+	wait.Add(len(allRepos))
 	for i := 0; i < len(allRepos); i++ {
 		fmt.Printf("repo name %d/%d  id: %d  %s\n", i, len(allRepos), giteaOrgObj.ID, *allRepos[i].Name)
 		description := ""
@@ -106,15 +110,18 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 		//	fmt.Println(res)
 		//	fmt.Println("errorr")
 		//}
-		repo, _, _ := giteaClient.MigrateRepo(gitea.MigrateRepoOption{
-			CloneAddr:   *allRepos[i].CloneURL,
-			RepoOwnerID: giteaOrgObj.ID,
-			RepoName:    *allRepos[i].Name,
-			Mirror:      true,
-			Private:     false,
-			Description: description,
-		})
-		fmt.Println(repo)
-		time.Sleep(100 * time.Millisecond) // THIS IS HERE SO THE GITEA SERVER DOESNT GET HAMMERED WITH REQUESTS
+		go func(i int, description string) {
+			repo, _, _ := giteaClient.MigrateRepo(gitea.MigrateRepoOption{
+				CloneAddr:   *allRepos[i].CloneURL,
+				RepoOwnerID: giteaOrgObj.ID,
+				RepoName:    *allRepos[i].Name,
+				Mirror:      true,
+				Private:     false,
+				Description: description,
+			})
+			fmt.Println("finish", repo.Name, repo.CloneURL)
+			defer wait.Done()
+		}(i, description)
 	}
+	wait.Wait()
 }
