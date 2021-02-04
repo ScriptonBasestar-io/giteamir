@@ -28,10 +28,16 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 		fmt.Println(err)
 	} else {
 		fmt.Print(githubOrgObj)
+		description := ""
+		if githubOrgObj.Description != nil { // will throw a nil pointer error if description is passed directly to the below struct
+			description = *githubOrgObj.Description
+		} else {
+			description = ""
+		}
 		orgOption = gitea.CreateOrgOption{
 			Name: *githubOrgObj.Login,
 			//FullName: *githubOrgObj.
-			Description: *githubOrgObj.Description,
+			Description: description,
 			Website:     *githubOrgObj.HTMLURL,
 			//Location:    *githubOrgObj.Location,
 			Visibility: gitea.VisibleTypeLimited,
@@ -72,15 +78,22 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 	if err != nil && err.Error() == "404 Not Found" {
 		fmt.Println("organization not exists in gitea")
 		fmt.Println("create org : " + *githubOrgObj.Login)
-		giteaClient.CreateOrg(orgOption)
+		giteaOrgObj, res, err = giteaClient.CreateOrg(orgOption)
+		if err != nil {
+			fmt.Println("exit. org id is ", giteaOrgObj.ID)
+			os.Exit(1)
+			return
+		}
 	}
 
-	if giteaOrgObj.ID == 1 {
-		fmt.Println("exit. org id is ", giteaOrgObj.ID)
-		os.Exit(1)
-	}
+	//if giteaOrgObj.ID == 1 {
+	//	fmt.Println("exit. org id is ", giteaOrgObj.ID)
+	//	os.Exit(1)
+	//	return
+	//}
+
 	for i := 0; i < len(allRepos); i++ {
-		fmt.Printf("repo name %d: %d  %s\n", i, giteaOrgObj.ID, *allRepos[i].Name)
+		fmt.Printf("repo name %d/%d  id: %d  %s\n", i, len(allRepos), giteaOrgObj.ID, *allRepos[i].Name)
 		description := ""
 		if allRepos[i].Description != nil { // will throw a nil pointer error if description is passed directly to the below struct
 			description = *allRepos[i].Description
@@ -88,6 +101,11 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 		//giteaClient.TransferRepo("archmagece", *allRepos[i].Name, gitea.TransferRepoOption{
 		//	NewOwner: giteaOrgObj.UserName,
 		//})
+		//res, err := giteaClient.DeleteRepo("archmagece", *allRepos[i].Name)
+		//if err != nil {
+		//	fmt.Println(res)
+		//	fmt.Println("errorr")
+		//}
 		repo, _, _ := giteaClient.MigrateRepo(gitea.MigrateRepoOption{
 			CloneAddr:   *allRepos[i].CloneURL,
 			RepoOwnerID: giteaOrgObj.ID,

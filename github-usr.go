@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/google/go-github/github"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -71,15 +72,25 @@ func migrateUsrGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 	if err != nil && err.Error() == "404 Not Found" {
 		fmt.Println("organization not exists in gitea")
 		fmt.Println("create org : " + *githubUsrObj.Login)
-		giteaClient.CreateOrg(orgOption)
+		giteaOrgObj, res, err = giteaClient.CreateOrg(orgOption)
+		if err != nil {
+			fmt.Println("exit. org id is ", giteaOrgObj.ID)
+			os.Exit(1)
+			return
+		}
 	}
 
 	for i := 0; i < len(allRepos); i++ {
-		fmt.Printf("repo name %d: %s\n", i, *allRepos[i].Name)
+		fmt.Printf("repo name %d/%d  id: %d  %s\n", i, len(allRepos), giteaOrgObj.ID, *allRepos[i].Name)
 		description := ""
 		if allRepos[i].Description != nil { // will throw a nil pointer error if description is passed directly to the below struct
 			description = *allRepos[i].Description
 		}
+		//res, err := giteaClient.DeleteRepo("archmagece", *allRepos[i].Name)
+		//if err != nil {
+		//	fmt.Println(res)
+		//	fmt.Println("errorr")
+		//}
 		repo, _, _ := giteaClient.MigrateRepo(gitea.MigrateRepoOption{
 			CloneAddr:   *allRepos[i].CloneURL,
 			RepoOwnerID: giteaOrgObj.ID,
