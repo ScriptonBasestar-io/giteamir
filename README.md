@@ -5,6 +5,7 @@ gitea mirror command line
 ## Install
 
 ```shell
+go get -u golang.org/x/lint/golint
 go install github.com/ScriptonBasestar-io/giteamir
 ```
 
