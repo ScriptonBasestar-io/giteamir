@@ -5,9 +5,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/go-github/github"
+	"github.com/zenthangplus/goccm"
 	"net/http"
 	"os"
-	"time"
 )
 
 func migrateUsrGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken string) {
@@ -80,8 +80,11 @@ func migrateUsrGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 		}
 	}
 
+	c := goccm.New(10)
+
 	// https://api.github.com/orgs/wikibook !?!!?!? https://api.github.com/users/wikibook ?!?!?!?!
 	for i := 0; i < len(allRepos); i++ {
+		c.Wait()
 		fmt.Printf("repo name %d/%d  id: %d  %s\n", i, len(allRepos), giteaOrgObj.ID, *allRepos[i].Name)
 		description := ""
 		if allRepos[i].Description != nil { // will throw a nil pointer error if description is passed directly to the below struct
@@ -92,15 +95,18 @@ func migrateUsrGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 		//	fmt.Println(res)
 		//	fmt.Println("errorr")
 		//}
-		repo, _, _ := giteaClient.MigrateRepo(gitea.MigrateRepoOption{
-			CloneAddr:   *allRepos[i].CloneURL,
-			RepoOwnerID: giteaOrgObj.ID,
-			RepoName:    *allRepos[i].Name,
-			Mirror:      true,
-			Private:     false,
-			Description: description,
-		})
-		fmt.Println(repo)
-		time.Sleep(100 * time.Millisecond) // THIS IS HERE SO THE GITEA SERVER DOESNT GET HAMMERED WITH REQUESTS
+		go func(i int, description string) {
+			repo, _, _ := giteaClient.MigrateRepo(gitea.MigrateRepoOption{
+				CloneAddr:   *allRepos[i].CloneURL,
+				RepoOwnerID: giteaOrgObj.ID,
+				RepoName:    *allRepos[i].Name,
+				Mirror:      true,
+				Private:     false,
+				Description: description,
+			})
+			fmt.Println("finish", repo.Name, repo.CloneURL)
+			c.Done()
+		}(i, description)
 	}
+	c.WaitAllDone()
 }

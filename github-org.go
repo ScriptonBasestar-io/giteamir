@@ -5,9 +5,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/go-github/github"
+	"github.com/zenthangplus/goccm"
 	"net/http"
 	"os"
-	"sync"
 )
 
 func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken string) {
@@ -94,9 +94,10 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 	//	return
 	//}
 
-	var wait sync.WaitGroup
-	wait.Add(len(allRepos))
+	c := goccm.New(10)
+
 	for i := 0; i < len(allRepos); i++ {
+		c.Wait()
 		fmt.Printf("repo name %d/%d  id: %d  %s\n", i, len(allRepos), giteaOrgObj.ID, *allRepos[i].Name)
 		description := ""
 		if allRepos[i].Description != nil { // will throw a nil pointer error if description is passed directly to the below struct
@@ -120,8 +121,8 @@ func migrateOrgGithubToGitea(githubAccName, githubToken, giteaHost, giteaToken s
 				Description: description,
 			})
 			fmt.Println("finish", repo.Name, repo.CloneURL)
-			defer wait.Done()
+			c.Done()
 		}(i, description)
 	}
-	wait.Wait()
+	c.WaitAllDone()
 }
